@@ -1,0 +1,16 @@
+psh 5
+psh 10
+add
+gpt a
+
+psh 9
+psh 3
+div
+gpt b
+
+gld a
+gld b
+
+div
+log
+hlt 0

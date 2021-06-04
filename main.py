@@ -1,115 +1,5 @@
-class VM:
-    def __init__(self, code):
-        self.code = code
-        self.sp = -1 # Stack Pointer
-        self.pc = -1 # Program Counter
-        self.instruction = 0
-        self.data = 0
-        self.stack = [None] * 5
-        self.registers = {'a':None, 'a':None, 'a':None, 'a':None}
+from vm import VM
 
-    def advance(self):
-        self.pc += 1
-
-    def execute(self):
-        self.instruction = self.code[self.pc]
-        self.do_primitive()
-
-    def push(self, data):
-        self.sp += 1
-        self.stack[self.sp] = data
-
-    def pop(self):
-        self.stack[self.sp] = None
-        self.sp -= 1
-
-    def run(self):
-        while self.pc < len(self.code) - 1:
-            self.advance()
-            self.execute()
-            #print(self.stack)
-            #print(self.registers)
-
-            if self.instruction == 0: # halt
-                break
-
-    def get_data(self):
-        self.advance()
-        return self.code[self.pc]
-
-    def do_primitive(self):
-        if self.instruction == 1: # push
-            value = self.get_data()
-            print(f"PSH {value}")
-            self.push(value)
-
-        if self.instruction == 2: # pop
-            print(f"POP")
-            self.pop()
-
-        if self.instruction == 3: # add
-            op1 = self.stack[self.sp - 1]
-            op2 = self.stack[self.sp]
-            ans = op1 + op2
-            print(f"ADD {op1} + {op2} = {ans}")
-            self.pop()
-            self.pop()
-            self.push(ans)
-
-        if self.instruction == 4: # subtract
-            op1 = self.stack[self.sp - 1]
-            op2 = self.stack[self.sp]
-            ans = op1 - op2
-            print(f"SUB {op1} - {op2} = {ans}")
-            self.pop()
-            self.pop()
-            self.push(ans)
-
-        if self.instruction == 5: # divide
-            op1 = self.stack[self.sp - 1]
-            op2 = self.stack[self.sp]
-            ans = op1 / op2
-            print(f"DIV {op1} / {op2} = {ans}")
-            self.pop()
-            self.pop()
-            self.push(ans)
-
-        if self.instruction == 6: # multiply
-            op1 = self.stack[self.sp - 1]
-            op2 = self.stack[self.sp]
-            ans = op1 * op2
-            print(f"MUL {op1} * {op2} = {ans}")
-            self.pop()
-            self.pop()
-            self.push(ans)
-
-        if self.instruction == 7: # log
-            if self.data == 0:
-                print(self.stack[self.sp])
-
-        if self.instruction == 8: # set
-            reg = self.get_data()
-            data = self.get_data()
-            print(f"SET {reg} TO {data}")
-            self.registers[reg] = data
-
-        if self.instruction == 9: # mov
-            reg_1 = self.get_data()
-            reg_2 = self.get_data()
-            print(f"MOV {reg_1} TO {reg_2}")
-            self.registers[reg_1] = self.registers[reg_2]
-            self.registers[reg_2] = None
-
-        if self.instruction == 10: # gld
-            reg = self.get_data()
-            print(f"GLD {reg}")
-            self.push(self.registers[reg])
-            self.registers[reg] = None
-        
-        if self.instruction == 11: # gpt
-            reg = self.get_data()
-            print(f"GPT {reg}")
-            self.registers[reg] = self.stack[self.sp]
 
 def compile(text):
     mapping = {
@@ -124,16 +14,47 @@ def compile(text):
         'set':8,
         'mov':9,
         'gld':10,
-        'gpt':11
+        'gpt':11,
+        'if':12
     }
     compiled = []
     for i in text:
-        if type(i) is str and len(i) > 1:
+        if type(i) is str and i.isnumeric():
+            compiled.append(int(i))
+        elif type(i) is str and len(i) > 1:
             compiled.append(mapping[i])
         else:
             compiled.append(i)
     return compiled
 
+
+def lexer(text):
+    pos = -1
+    words = []
+    cur = ''
+    while pos < len(text) - 1:
+        pos += 1
+        char = text[pos]
+
+        if char.isalpha():
+            cur += char
+
+        if char.isnumeric():
+            cur += char
+        
+        if char.isspace() or char == '\n':
+            words.append(cur)
+            cur = ''
+    words.append(cur)
+
+    return words
+    
+
+def get_text(file):
+    with open(file, 'r') as f:
+        text = f.read()
+    
+    return text
 
 '''
 REGISTERS:
@@ -163,17 +84,31 @@ INSTRUCTIONS:
 
 def main():
     '''
-    I'll add an actual Compiler later, the current compiler should be enough for now
+    I'll add an actual Compiler later, the current "compiler" should be enough for now
     '''
     code = [
-        'psh', 1,
-        'psh', 2,
-        'add', 
-        'log',
+        'set', 'a', 5,
+        'psh', 5,
+        'psh', 10,
+        'mul',
+        'psh', 25,
+        'div',
         'gpt', 'a',
+        'psh', 5,
+        'psh', 20,
+        'add',
+        'gpt', 'b',
         'gld', 'a',
-        'log'
+        'gld', 'b',
+        'log',
+        'pop',
+        'log',
+        'hlt', 0
     ]
+
+    text = get_text('test.txt')
+    code = lexer(text)
+    
     compiled = compile(code)
     vm = VM(compiled)
     vm.run()
